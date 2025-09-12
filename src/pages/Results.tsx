@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
 import WeatherWidget from '@/components/WeatherWidget';
 import SoilWidget from '@/components/SoilWidget';
+import { supabase } from '@/integrations/supabase/client';
 import CropCard from '@/components/CropCard';
 import { calculateRecommendations } from '@/data/mockData';
 import { ArrowLeft, MapPin, Wheat, MessageCircle } from 'lucide-react';
@@ -27,6 +28,32 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
   const { t } = useLanguage();
   const [selectedCrop, setSelectedCrop] = useState(null);
   const [showChatbot, setShowChatbot] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [locationData, setLocationData] = useState<any>(null);
+
+  // Fetch location data when component mounts
+  React.useEffect(() => {
+    fetchLocationData();
+  }, [formData.pincode]);
+
+  const fetchLocationData = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-location', {
+        body: { pincode: formData.pincode }
+      });
+
+      if (error) {
+        console.error('Location fetch error:', error);
+        return;
+      }
+
+      setLocationData(data);
+    } catch (err) {
+      console.error('Location fetch error:', err);
+    }
+  };
   
   const recommendations = calculateRecommendations(
     formData.pincode,
@@ -37,6 +64,46 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
 
   const handleViewDetails = (crop: any) => {
     setSelectedCrop(crop);
+  };
+
+  const handleChatSubmit = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setChatLoading(true);
+
+    try {
+      const userContext = {
+        location: locationData ? `${locationData.name}, ${locationData.state}` : formData.pincode,
+        previousCrops: formData.previousCrops?.join(', ') || 'Not specified',
+        farmArea: `${formData.farmArea} ${formData.areaUnit}`,
+        season: new Date().getMonth() >= 3 && new Date().getMonth() <= 6 ? 'Kharif' : 'Rabi'
+      };
+
+      const { data, error } = await supabase.functions.invoke('agriculture-chatbot', {
+        body: { 
+          message: userMessage,
+          language: 'en', // You can make this dynamic based on user preference
+          userContext
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+    } catch (error: any) {
+      console.error('Chat error:', error);
+      setChatMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error. Please try again.' 
+      }]);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -247,8 +314,8 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
 
             {/* Sidebar - Weather & Soil */}
             <div className="space-y-6">
-              <WeatherWidget />
-              <SoilWidget />
+              <WeatherWidget pincode={formData.pincode} />
+              <SoilWidget pincode={formData.pincode} location={locationData} />
             </div>
           </div>
         </div>
@@ -264,23 +331,69 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
         <MessageCircle className="h-6 w-6" />
       </Button>
 
-      {/* Simple Chatbot Popup */}
+      {/* AI Chatbot Popup */}
       {showChatbot && (
-        <div className="fixed bottom-24 right-6 w-80 h-96 bg-card border border-primary/20 rounded-lg shadow-elevation p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-primary">AI Farm Assistant</h3>
+        <div className="fixed bottom-24 right-6 w-80 h-96 bg-card border border-primary/20 rounded-lg shadow-elevation flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="font-semibold text-primary">🤖 AI Farm Assistant</h3>
             <Button variant="ghost" size="sm" onClick={() => setShowChatbot(false)}>×</Button>
           </div>
-          <div className="text-center text-muted-foreground">
-            <div className="text-4xl mb-4">🤖</div>
-            <p className="text-sm">
-              AI chatbot integration coming soon! This will provide personalized farming advice in Hindi and English.
-            </p>
-            <div className="mt-4 text-xs space-y-1">
-              <p>Sample queries:</p>
-              <p>• "मेरी फसल में पीले पत्ते हैं"</p>
-              <p>• "Best fertilizer for wheat?"</p>
-              <p>• "Market prices in Punjab"</p>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {chatMessages.length === 0 ? (
+              <div className="text-center text-muted-foreground">
+                <div className="text-2xl mb-2">🌾</div>
+                <p className="text-sm mb-3">Ask me anything about farming!</p>
+                <div className="text-xs space-y-1">
+                  <p>• "मेरी फसल में पीले पत्ते हैं"</p>
+                  <p>• "Best fertilizer for wheat?"</p>
+                  <p>• "Market prices in Punjab"</p>
+                </div>
+              </div>
+            ) : (
+              chatMessages.map((msg, index) => (
+                <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] p-2 rounded-lg text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))
+            )}
+            {chatLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted text-muted-foreground p-2 rounded-lg text-sm">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse delay-75"></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse delay-150"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="p-4 border-t">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask about farming..."
+                className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-background"
+                onKeyPress={(e) => e.key === 'Enter' && handleChatSubmit()}
+                disabled={chatLoading}
+              />
+              <Button 
+                size="sm" 
+                onClick={handleChatSubmit}
+                disabled={chatLoading || !chatInput.trim()}
+              >
+                Send
+              </Button>
             </div>
           </div>
         </div>

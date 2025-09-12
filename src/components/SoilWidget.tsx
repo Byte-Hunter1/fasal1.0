@@ -1,69 +1,162 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockSoilData } from '@/data/mockData';
-import { TestTube, Droplets } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { Beaker, Droplets, Leaf, AlertTriangle, Loader2 } from 'lucide-react';
 
-const SoilWidget: React.FC = () => {
+interface SoilWidgetProps {
+  pincode?: string;
+  location?: {
+    district?: string;
+    state?: string;
+  };
+}
+
+const SoilWidget: React.FC<SoilWidgetProps> = ({ pincode, location }) => {
   const { t } = useLanguage();
-  const soil = mockSoilData;
+  const [soilData, setSoilData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const getQualityColor = (quality: string) => {
-    switch (quality) {
-      case 'excellent': return 'bg-success';
-      case 'good': return 'bg-primary';
-      case 'fair': return 'bg-warning';
-      case 'poor': return 'bg-destructive';
-      default: return 'bg-muted';
+  useEffect(() => {
+    if (pincode && location) {
+      fetchSoilData();
+    }
+  }, [pincode, location]);
+
+  const fetchSoilData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('get-soil-data', {
+        body: { 
+          pincode,
+          district: location?.district || 'Unknown',
+          state: location?.state || 'Unknown'
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setSoilData(data);
+    } catch (err: any) {
+      console.error('Soil data fetch error:', err);
+      setError(err.message || 'Failed to fetch soil data');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const getPhStatus = (ph: number) => {
+    if (ph < 6.0) return { status: 'Acidic', color: 'destructive' };
+    if (ph > 8.0) return { status: 'Alkaline', color: 'warning' };
+    return { status: 'Optimal', color: 'success' };
+  };
+
+  const getNutrientStatus = (value: number) => {
+    if (value < 40) return { status: 'Low', color: 'destructive' };
+    if (value < 70) return { status: 'Medium', color: 'warning' };
+    return { status: 'High', color: 'success' };
+  };
+
+  if (loading) {
+    return (
+      <Card className="shadow-card border-primary/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('soilAnalysis')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="text-muted-foreground">Loading soil data...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="shadow-card border-primary/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <Beaker className="h-5 w-5" />
+            {t('soilAnalysis')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <div className="text-muted-foreground text-sm">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!soilData) {
+    return (
+      <Card className="shadow-card border-primary/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <Beaker className="h-5 w-5" />
+            {t('soilAnalysis')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <div className="text-muted-foreground text-sm">Enter pincode to view soil analysis</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const phStatus = getPhStatus(soilData.ph);
 
   return (
     <Card className="shadow-card border-primary/10">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-primary">
-            <TestTube className="h-5 w-5" />
-            {t('soilQuality')}
-          </div>
-          <Badge className={`${getQualityColor(soil.quality)} text-white`}>
-            {soil.quality.toUpperCase()}
-          </Badge>
+        <CardTitle className="flex items-center gap-2 text-primary">
+          <Beaker className="h-5 w-5" />
+          {t('soilAnalysis')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* pH Level */}
+        {/* Soil Type & pH */}
         <div className="bg-gradient-earth rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">pH Level</span>
-            <span className="font-bold text-primary">{soil.ph}</span>
+            <span className="text-sm font-medium">Soil Type: {soilData.soilType}</span>
+            <Badge variant={phStatus.color as any} className="text-xs">
+              {soilData.ph.toFixed(1)} - {phStatus.status}
+            </Badge>
           </div>
-          <Progress value={((soil.ph - 4) / 6) * 100} className="h-2" />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>Acidic (4)</span>
-            <span>Neutral (7)</span>
-            <span>Alkaline (10)</span>
+          <div className="text-xs text-muted-foreground">
+            Last tested: {soilData.lastTested} • {soilData.testingCenter}
           </div>
         </div>
 
         {/* Nutrient Levels */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-success mb-1">{soil.nitrogen}%</div>
-            <div className="text-xs text-muted-foreground">Nitrogen (N)</div>
-            <Progress value={soil.nitrogen} className="h-1 mt-2" />
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-warning mb-1">{soil.phosphorus}%</div>
-            <div className="text-xs text-muted-foreground">Phosphorus (P)</div>
-            <Progress value={soil.phosphorus} className="h-1 mt-2" />
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-info mb-1">{soil.potassium}%</div>
-            <div className="text-xs text-muted-foreground">Potassium (K)</div>
-            <Progress value={soil.potassium} className="h-1 mt-2" />
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-muted-foreground">Nutrient Levels</h4>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm">N</span>
+              <Badge variant={getNutrientStatus(soilData.nitrogen).color as any} className="text-xs">
+                {Math.round(soilData.nitrogen)} - {getNutrientStatus(soilData.nitrogen).status}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">P</span>
+              <Badge variant={getNutrientStatus(soilData.phosphorus).color as any} className="text-xs">
+                {Math.round(soilData.phosphorus)} - {getNutrientStatus(soilData.phosphorus).status}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">K</span>
+              <Badge variant={getNutrientStatus(soilData.potassium).color as any} className="text-xs">
+                {Math.round(soilData.potassium)} - {getNutrientStatus(soilData.potassium).status}
+              </Badge>
+            </div>
           </div>
         </div>
 
@@ -73,15 +166,30 @@ const SoilWidget: React.FC = () => {
             <Droplets className="h-4 w-4 text-info" />
             <div className="text-sm">
               <div className="font-medium">Moisture</div>
-              <div className="text-muted-foreground">{soil.moisture}%</div>
+              <div className="text-muted-foreground">{soilData.moisture}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded-full bg-primary"></div>
+            <Leaf className="h-4 w-4 text-success" />
             <div className="text-sm">
               <div className="font-medium">Organic Matter</div>
-              <div className="text-muted-foreground">{soil.organic_matter}%</div>
+              <div className="text-muted-foreground">{soilData.organicMatter}%</div>
             </div>
+          </div>
+        </div>
+
+        {/* Recommendations */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-muted-foreground">Recommendations</h4>
+          <div className="space-y-3">
+            {soilData.recommendations?.map((rec: string, index: number) => (
+              <div key={index} className="flex items-start gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                <span className="text-muted-foreground">{rec}</span>
+              </div>
+            )) || (
+              <div className="text-sm text-muted-foreground">No specific recommendations available</div>
+            )}
           </div>
         </div>
       </CardContent>

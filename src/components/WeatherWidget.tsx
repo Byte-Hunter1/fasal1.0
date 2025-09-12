@@ -1,12 +1,92 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockWeatherData } from '@/data/mockData';
-import { Thermometer, Droplets, Eye } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Thermometer, Droplets, Eye, Loader2 } from 'lucide-react';
 
-const WeatherWidget: React.FC = () => {
+interface WeatherWidgetProps {
+  pincode?: string;
+}
+
+const WeatherWidget: React.FC<WeatherWidgetProps> = ({ pincode }) => {
   const { t } = useLanguage();
-  const weather = mockWeatherData;
+  const [weather, setWeather] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pincode) {
+      fetchWeatherData(pincode);
+    }
+  }, [pincode]);
+
+  const fetchWeatherData = async (pincodeValue: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('get-weather', {
+        body: { pincode: pincodeValue }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setWeather(data);
+    } catch (err: any) {
+      console.error('Weather fetch error:', err);
+      setError(err.message || 'Failed to fetch weather data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="shadow-card border-primary/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('weatherForecast')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="text-muted-foreground">Loading weather data...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="shadow-card border-primary/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            🌤️ {t('weatherForecast')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <div className="text-muted-foreground text-sm">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!weather) {
+    return (
+      <Card className="shadow-card border-primary/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            🌤️ {t('weatherForecast')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <div className="text-muted-foreground text-sm">Enter pincode to view weather</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-card border-primary/10">

@@ -1,1 +1,13 @@
 project_id = "zjzepvoklqnubjpfqjoz"
+
+[functions.get-weather]
+verify_jwt = false
+
+[functions.agriculture-chatbot]
+verify_jwt = false
+
+[functions.get-location]
+verify_jwt = false
+
+[functions.get-soil-data]
+verify_jwt = false

@@ -36,6 +36,7 @@ const translations = {
     expectedReturns: 'Expected Returns',
     weatherForecast: 'Weather Forecast',
     soilQuality: 'Soil Quality',
+    soilAnalysis: 'Soil Analysis',
     
     // Crop Details
     fertilizer: 'Fertilizer Schedule',
@@ -82,6 +83,7 @@ const translations = {
     expectedReturns: 'अपेक्षित रिटर्न',
     weatherForecast: 'मौसम पूर्वानुमान',
     soilQuality: 'मिट्टी की गुणवत्ता',
+    soilAnalysis: 'मिट्टी विश्लेषण',
     
     // Crop Details
     fertilizer: 'उर्वरक कार्यक्रम',
