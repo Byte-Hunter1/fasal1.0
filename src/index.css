@@ -2,39 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* FASAL Agriculture App Design System 
+Agricultural theme with deep greens, golden yellows, and earth tones.
 All colors MUST be HSL.
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap');
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Agricultural color palette */
+    --background: 0 0% 98%;
+    --foreground: 140 20% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 140 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 140 20% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* FASAL Brand Colors */
+    --primary: 140 65% 20%;        /* Deep Agricultural Green #2E7D32 */
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 140 55% 35%;  /* Lighter green for hover states */
+    
+    --secondary: 45 100% 50%;      /* Golden Yellow #FFB300 */
+    --secondary-foreground: 140 20% 15%;
+    --secondary-light: 45 100% 65%; /* Light golden for accents */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Earth tones for agriculture theme */
+    --muted: 30 20% 96%;
+    --muted-foreground: 140 15% 45%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 25 35% 90%;          /* Warm earth tone */
+    --accent-foreground: 140 20% 15%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --border: 140 20% 88%;
+    --input: 0 0% 100%;
+    --ring: 140 65% 20%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Agricultural gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-light)));
+    --gradient-earth: linear-gradient(180deg, hsl(var(--background)), hsl(var(--accent)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--secondary)) 100%);
+
+    /* Agricultural shadows */
+    --shadow-primary: 0 4px 20px hsl(var(--primary) / 0.15);
+    --shadow-secondary: 0 4px 20px hsl(var(--secondary) / 0.15);
+    --shadow-card: 0 2px 10px hsl(140 20% 15% / 0.08);
+    --shadow-elevation: 0 8px 30px hsl(140 20% 15% / 0.12);
+
+    /* Success and warning colors for crop status */
+    --success: 120 60% 40%;        /* Healthy crop green */
+    --success-foreground: 0 0% 98%;
+    --warning: 35 90% 55%;         /* Attention amber */
+    --warning-foreground: 140 20% 15%;
+    --info: 200 100% 45%;          /* Water/sky blue */
+    --info-foreground: 0 0% 98%;
 
     --radius: 0.5rem;
 
@@ -101,5 +129,67 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Hindi text support */
+  .hindi-text {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+  }
+
+  /* Custom agricultural animations */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-grow {
+    animation: grow 2s ease-in-out infinite alternate;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes grow {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+  }
+
+  /* Gradient text effects */
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-gradient-secondary {
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Custom scrollbar for agricultural theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary-light));
   }
 }
