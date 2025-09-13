@@ -30,16 +30,19 @@ serve(async (req) => {
       season = 'zaid';
     }
 
-    const systemPrompt = `You are an expert agricultural advisor for Indian farming. Based on the provided data, recommend the TOP 5 most suitable and profitable crops for the farmer.
+    const systemPrompt = `You are an expert agricultural advisor for Indian farming with deep knowledge of crop science, market economics, and regional farming practices. Based on the provided data, recommend the TOP 5 most suitable and profitable crops for the farmer.
 
 IMPORTANT INSTRUCTIONS:
-1. Provide realistic investment and return calculations based on current Indian market rates
-2. Consider the specific location, weather, soil conditions, and season
-3. Factor in crop rotation benefits if previous crops are provided
-4. Calculate profit as: Expected Returns - Total Investment
-5. Ensure all financial figures are realistic and profitable
-6. Consider both Kharif and Rabi season crops based on timing
-7. Provide crop-specific advice for the region
+1. Provide ACCURATE and REALISTIC investment and return calculations based on current Indian market rates
+2. Consider the specific location, weather patterns, soil conditions, and current growing season
+3. Factor in crop rotation benefits and avoid recommending crops that were previously grown
+4. Calculate profit as: Expected Returns - Total Investment with precise figures
+5. Ensure all financial figures are realistic, profitable, and based on current market conditions
+6. Consider both seasonal and year-round crops appropriate for the region
+7. Provide crop-specific advice tailored to the exact region and conditions
+8. Account for water availability based on rainfall data and irrigation needs
+9. Consider market demand and price stability for recommended crops
+10. Include risk assessment factors in your recommendations
 
 CONTEXT:
 - Location: ${locationData?.name || 'Unknown'}, ${locationData?.state || 'India'}
@@ -47,8 +50,8 @@ CONTEXT:
 - Farm Area: ${farmArea} ${areaUnit}
 - Current Season: ${season}
 - Previous Crops: ${previousCrops?.join(', ') || 'None specified'}
-- Weather: ${weatherData ? `${weatherData.current.temp}°C, ${weatherData.current.description}` : 'Not available'}
-- Soil: ${soilData ? `pH: ${soilData.ph}, Quality: ${soilData.quality}` : 'Not available'}
+- Weather: ${weatherData ? `Current: ${weatherData.current.temp}°C, ${weatherData.current.description}, Humidity: ${weatherData.current.humidity}%, Forecast: ${weatherData.forecast?.[0]?.description || 'N/A'}` : 'Not available'}
+- Soil: ${soilData ? `pH: ${soilData.ph}, Nitrogen: ${soilData.nitrogen}, Phosphorus: ${soilData.phosphorus}, Potassium: ${soilData.potassium}, Organic Matter: ${soilData.organic_matter}%, Quality: ${soilData.quality}` : 'Not available'}
 
 Return ONLY a valid JSON array with exactly this structure (no additional text):
 [
@@ -58,7 +61,8 @@ Return ONLY a valid JSON array with exactly this structure (no additional text):
     "name_hi": "फसल का नाम",
     "season": "kharif|rabi|zaid",
     "image": "🌾",
-    "description": "Brief description of why this crop is suitable",
+    "description_en": "Detailed description of why this crop is suitable including soil compatibility, climate suitability, and market potential",
+    "description_hi": "फसल की उपयुक्तता का विस्तृत विवरण",
     "soilType": "loamy|clayey|sandy|black|alluvial",
     "totalInvestment": 45000,
     "expectedReturn": 75000,
@@ -66,8 +70,19 @@ Return ONLY a valid JSON array with exactly this structure (no additional text):
     "actualROI": 66.7,
     "growingStates": ["state1", "state2"],
     "duration": "90-120 days",
-    "waterRequirement": "Medium",
-    "marketDemand": "High"
+    "waterRequirement": "Low|Medium|High",
+    "marketDemand": "Low|Medium|High",
+    "riskLevel": "Low|Medium|High",
+    "investmentBreakdown": {
+      "seeds": 5000,
+      "fertilizers": 10000,
+      "pesticides": 5000,
+      "irrigation": 8000,
+      "labor": 12000,
+      "other": 5000
+    },
+    "marketPriceRange": "₹18-22 per kg",
+    "yieldPerAcre": "25-30 quintals"
   }
 ]
 
@@ -76,7 +91,11 @@ Ensure:
 - actualROI = (profitAmount / totalInvestment) * 100
 - Investment amounts are realistic for Indian farming (₹20,000 - ₹2,00,000 per acre typically)
 - Expected returns should be higher than investment to ensure profitability
-- All financial calculations are accurate`;
+- All financial calculations are accurate and based on current market rates
+- Investment breakdown should be detailed and realistic
+- Yield estimates should be based on typical productivity in the region with given soil and climate conditions
+- Market price ranges should reflect current trends and seasonal variations
+- Risk assessment should consider climate vulnerabilities, pest susceptibility, and market volatility`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -85,13 +104,14 @@ Ensure:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Please provide crop recommendations for the given conditions. Focus on profitable crops suitable for ${season} season in ${locationData?.state || 'India'}.` }
+          { role: 'user', content: `Please provide detailed crop recommendations for the given conditions. Focus on profitable crops suitable for ${season} season in ${locationData?.state || 'India'} with accurate investment and return calculations. Consider local market conditions, soil quality, and weather patterns.` }
         ],
-        max_tokens: 2000,
-        temperature: 0.7,
+        max_tokens: 3000,
+        temperature: 0.5,
+        response_format: { type: "json_object" }
       }),
     });
 
@@ -107,30 +127,72 @@ Ensure:
     aiResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
     
     try {
-      const recommendations = JSON.parse(aiResponse);
+      // Parse the response - handle both array and object with recommendations property
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(aiResponse);
+      } catch (e) {
+        console.error('Initial JSON parse error:', e);
+        // Try to extract JSON by finding the first [ and last ]
+        const jsonStart = aiResponse.indexOf('[');
+        const jsonEnd = aiResponse.lastIndexOf(']') + 1;
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const jsonStr = aiResponse.substring(jsonStart, jsonEnd);
+          parsedResponse = JSON.parse(jsonStr);
+        } else {
+          throw new Error('Could not extract valid JSON from response');
+        }
+      }
+      
+      // Handle both array and object with recommendations property
+      const recommendations = Array.isArray(parsedResponse) ? parsedResponse : 
+                             (parsedResponse.recommendations ? parsedResponse.recommendations : []);
+      
+      if (!recommendations || !recommendations.length) {
+        throw new Error('No valid recommendations found in response');
+      }
       
       // Validate and ensure calculations are correct
       const validatedRecommendations = recommendations.map((crop: any, index: number) => {
-        const profit = crop.expectedReturn - crop.totalInvestment;
-        const roi = ((profit / crop.totalInvestment) * 100);
+        // Ensure required fields exist
+        if (!crop.name_en || !crop.totalInvestment || !crop.expectedReturn) {
+          console.warn('Skipping invalid crop recommendation:', crop);
+          return null;
+        }
+        
+        // Calculate profit and ROI
+        const baseInvestment = typeof crop.totalInvestment === 'number' ? crop.totalInvestment : 0;
+        const baseReturn = typeof crop.expectedReturn === 'number' ? crop.expectedReturn : 0;
+        
+        // Scale based on farm area
+        const areaMultiplier = areaUnit === 'hectares' ? farmArea * 2.47 : farmArea;
+        const scaledInvestment = Math.round(baseInvestment * areaMultiplier);
+        const scaledReturn = Math.round(baseReturn * areaMultiplier);
+        
+        // Calculate profit and ROI
+        const profit = scaledReturn - scaledInvestment;
+        const roi = scaledInvestment > 0 ? (profit / scaledInvestment) * 100 : 0;
         
         return {
           ...crop,
           id: crop.id || `crop_${index + 1}`,
+          name_hi: crop.name_hi || '',
+          description_en: crop.description_en || crop.description || '',
+          description_hi: crop.description_hi || '',
+          totalInvestment: scaledInvestment,
+          expectedReturn: scaledReturn,
           profitAmount: profit,
           actualROI: parseFloat(roi.toFixed(1)),
-          // Scale investment based on farm area
-          totalInvestment: Math.round(crop.totalInvestment * (areaUnit === 'hectares' ? farmArea * 2.47 : farmArea)),
-          expectedReturn: Math.round(crop.expectedReturn * (areaUnit === 'hectares' ? farmArea * 2.47 : farmArea))
+          investmentBreakdown: crop.investmentBreakdown || null,
+          marketPriceRange: crop.marketPriceRange || '',
+          yieldPerAcre: crop.yieldPerAcre || '',
+          riskLevel: crop.riskLevel || 'Medium'
         };
-      }).filter((crop: any) => crop.profitAmount > 0); // Only return profitable crops
+      })
+      .filter(crop => crop !== null && crop.profitAmount > 0); // Only return valid and profitable crops
 
-      // Recalculate after scaling
-      const finalRecommendations = validatedRecommendations.map((crop: any) => ({
-        ...crop,
-        profitAmount: crop.expectedReturn - crop.totalInvestment,
-        actualROI: parseFloat(((crop.expectedReturn - crop.totalInvestment) / crop.totalInvestment * 100).toFixed(1))
-      }));
+      // Sort by ROI (highest first)
+      const finalRecommendations = validatedRecommendations.sort((a: any, b: any) => b.actualROI - a.actualROI);
 
       console.log('AI crop recommendations generated for:', pincode, 'Season:', season);
       

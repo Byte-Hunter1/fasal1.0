@@ -39,10 +39,22 @@ const translations = {
     soilAnalysis: 'Soil Analysis',
     
     // Crop Details
-    fertilizer: 'Fertilizer Schedule',
+    fertilizerSchedule: 'Fertilizer Schedule',
     pesticide: 'Pesticide Schedule',
     bestPractices: 'Best Practices',
     marketPrice: 'Current Market Price',
+    expectedProfit: 'Expected Profit',
+    riskLevel: 'Risk Level',
+    yield: 'Expected Yield',
+    investmentBreakdown: 'Investment Breakdown',
+    seeds: 'Seeds',
+    labor: 'Labor',
+    irrigation: 'Irrigation',
+    pesticides: 'Pesticides',
+    other: 'Other Expenses',
+    risk: 'Risk',
+    noInvestmentBreakdown: 'No investment breakdown available',
+    fertilizer: 'Fertilizer',
     
     // Weather
     temperature: 'Temperature',
@@ -86,10 +98,22 @@ const translations = {
     soilAnalysis: 'मिट्टी विश्लेषण',
     
     // Crop Details
-    fertilizer: 'उर्वरक कार्यक्रम',
+    fertilizerSchedule: 'उर्वरक कार्यक्रम',
     pesticide: 'कीटनाशक कार्यक्रम',
     bestPractices: 'सर्वोत्तम प्रथाएं',
     marketPrice: 'वर्तमान बाजार मूल्य',
+    expectedProfit: 'अपेक्षित लाभ',
+    riskLevel: 'जोखिम स्तर',
+    yield: 'अपेक्षित उपज',
+    investmentBreakdown: 'निवेश विवरण',
+    seeds: 'बीज',
+    labor: 'श्रम',
+    irrigation: 'सिंचाई',
+    pesticides: 'कीटनाशक',
+    other: 'अन्य खर्च',
+    risk: 'जोखिम',
+    noInvestmentBreakdown: 'कोई निवेश विवरण उपलब्ध नहीं है',
+    fertilizer: 'उर्वरक',
     
     // Weather
     temperature: 'तापमान',

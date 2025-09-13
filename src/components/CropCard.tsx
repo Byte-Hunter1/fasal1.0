@@ -6,16 +6,27 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { TrendingUp, IndianRupee, Sprout, Eye } from 'lucide-react';
 
 interface CropRecommendation {
-  id: number;
+  id: number | string;
   name_en: string;
   name_hi: string;
-  image: string;
+  image?: string;
   totalInvestment: number;
   expectedReturn: number;
   profitAmount: number;
   actualROI: number;
   description_en: string;
   description_hi: string;
+  investmentBreakdown?: {
+    seeds?: number;
+    fertilizer?: number;
+    labor?: number;
+    irrigation?: number;
+    pesticides?: number;
+    other?: number;
+  } | null;
+  marketPriceRange?: string;
+  yieldPerAcre?: string;
+  riskLevel?: string;
 }
 
 interface CropCardProps {
@@ -90,12 +101,40 @@ const CropCard: React.FC<CropCardProps> = ({ crop, onViewDetails }) => {
           {/* Profit Highlight */}
           <div className="text-center py-2 px-4 bg-gradient-secondary rounded-lg">
             <div className="text-sm font-medium text-secondary-foreground">
-              Expected Profit
+              {t('expectedProfit')}
             </div>
             <div className="font-bold text-xl text-secondary-foreground">
               {formatCurrency(crop.profitAmount)}
             </div>
           </div>
+          
+          {/* Additional Info */}
+          {(crop.riskLevel || crop.marketPriceRange || crop.yieldPerAcre) && (
+            <div className="mt-2 space-y-2 text-sm">
+              {crop.riskLevel && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('riskLevel')}:</span>
+                  <Badge variant={crop.riskLevel === 'Low' ? 'success' : crop.riskLevel === 'Medium' ? 'warning' : 'destructive'}>
+                    {crop.riskLevel}
+                  </Badge>
+                </div>
+              )}
+              
+              {crop.marketPriceRange && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('marketPrice')}:</span>
+                  <span className="font-medium">{crop.marketPriceRange}</span>
+                </div>
+              )}
+              
+              {crop.yieldPerAcre && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('yield')}:</span>
+                  <span className="font-medium">{crop.yieldPerAcre}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Action Button */}

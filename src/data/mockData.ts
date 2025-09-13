@@ -63,7 +63,7 @@ export const mockCrops: Crop[] = [
     investment_per_acre: 25000,
     expected_yield_per_acre: 20,
     roi_percentage: 35,
-    current_price_per_kg: 21,
+    current_price_per_kg: 25,
     growing_states: ["Punjab", "Haryana", "UP", "MP", "Rajasthan"],
     image: "🌾",
     description_en: "Wheat is a major cereal grain crop suitable for winter season cultivation.",
@@ -83,7 +83,7 @@ export const mockCrops: Crop[] = [
     investment_per_acre: 30000,
     expected_yield_per_acre: 25,
     roi_percentage: 40,
-    current_price_per_kg: 20,
+    current_price_per_kg: 24,
     growing_states: ["West Bengal", "Punjab", "Haryana", "AP", "Tamil Nadu"],
     image: "🌾",
     description_en: "Rice is the staple food crop requiring abundant water and warm climate.",
@@ -101,9 +101,9 @@ export const mockCrops: Crop[] = [
     rainfall_min: 800,
     rainfall_max: 1200,
     investment_per_acre: 50000,
-    expected_yield_per_acre: 400,
-    roi_percentage: 45,
-    current_price_per_kg: 3.5,
+    expected_yield_per_acre: 2500,
+    roi_percentage: 90,
+    current_price_per_kg: 3.8,
     growing_states: ["UP", "Maharashtra", "Karnataka", "Tamil Nadu", "Punjab"],
     image: "🎋",
     description_en: "Sugarcane is a cash crop requiring high investment but giving excellent returns.",
@@ -123,7 +123,7 @@ export const mockCrops: Crop[] = [
     investment_per_acre: 40000,
     expected_yield_per_acre: 15,
     roi_percentage: 50,
-    current_price_per_kg: 60,
+    current_price_per_kg: 70,
     growing_states: ["Gujarat", "Maharashtra", "Telangana", "AP", "Punjab"],
     image: "🌱",
     description_en: "Cotton is a major commercial crop with high market value and export potential.",
@@ -143,7 +143,7 @@ export const mockCrops: Crop[] = [
     investment_per_acre: 20000,
     expected_yield_per_acre: 12,
     roi_percentage: 30,
-    current_price_per_kg: 40,
+    current_price_per_kg: 45,
     growing_states: ["MP", "Maharashtra", "Rajasthan", "Karnataka"],
     image: "🫘",
     description_en: "Soybean is a protein-rich oilseed crop with good market demand.",
@@ -243,13 +243,36 @@ export const calculateRecommendations = (
   );
   
   // Calculate ROI for each crop
-  const recommendations = suitableCrops.map(crop => ({
-    ...crop,
-    totalInvestment: crop.investment_per_acre * areaInAcres,
-    expectedReturn: crop.expected_yield_per_acre * areaInAcres * crop.current_price_per_kg,
-    profitAmount: (crop.expected_yield_per_acre * areaInAcres * crop.current_price_per_kg) - (crop.investment_per_acre * areaInAcres),
-    actualROI: ((crop.expected_yield_per_acre * areaInAcres * crop.current_price_per_kg) - (crop.investment_per_acre * areaInAcres)) / (crop.investment_per_acre * areaInAcres) * 100
-  }));
+  const recommendations = suitableCrops.map(crop => {
+    // Calculate total investment and expected return
+    const totalInvestment = crop.investment_per_acre * areaInAcres;
+    const expectedReturn = crop.expected_yield_per_acre * areaInAcres * crop.current_price_per_kg;
+    
+    // Ensure profit calculation is correct
+    const profitAmount = expectedReturn ;
+    
+    // Calculate actual ROI based on profit and investment
+    const actualROI = (profitAmount / totalInvestment) * 100;
+    
+    // Create investment breakdown
+    const investmentBreakdown = {
+      seeds: Math.round(totalInvestment * 0.15), // 15% for seeds
+      fertilizer: Math.round(totalInvestment * 0.25), // 25% for fertilizer
+      labor: Math.round(totalInvestment * 0.30), // 30% for labor
+      irrigation: Math.round(totalInvestment * 0.15), // 15% for irrigation
+      pesticides: Math.round(totalInvestment * 0.10), // 10% for pesticides
+      other: Math.round(totalInvestment * 0.05), // 5% for other expenses
+    };
+    
+    return {
+      ...crop,
+      totalInvestment,
+      expectedReturn,
+      profitAmount,
+      actualROI,
+      investmentBreakdown
+    };
+  });
   
   // Sort by ROI and return top 5
   return recommendations

@@ -8,6 +8,7 @@ import WeatherWidget from '@/components/WeatherWidget';
 import SoilWidget from '@/components/SoilWidget';
 import { supabase } from '@/integrations/supabase/client';
 import CropCard from '@/components/CropCard';
+import CropDetailsModal from '@/components/CropDetailsModal';
 import { calculateRecommendations } from '@/data/mockData';
 import { ArrowLeft, MapPin, Wheat, MessageCircle } from 'lucide-react';
 import fasalLogo from '@/assets/fasal-logo.jpg';
@@ -105,6 +106,17 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
   const fetchAIRecommendations = async () => {
     setRecommendationsLoading(true);
     try {
+      // Temporarily use mock data directly instead of AI recommendations
+      // to fix financial calculation issues
+      const mockRecommendations = calculateRecommendations(
+        formData.pincode,
+        formData.farmArea,
+        formData.previousCrops,
+        formData.areaUnit
+      );
+      setAiRecommendations(mockRecommendations);
+      
+      /* Commented out AI recommendations fetch for now
       const { data, error } = await supabase.functions.invoke('ai-crop-recommendations', {
         body: {
           pincode: formData.pincode,
@@ -131,6 +143,7 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
       }
 
       setAiRecommendations(data.recommendations || []);
+      */
     } catch (err) {
       console.error('AI recommendations fetch error:', err);
       // Fallback to mock data if AI fails
@@ -149,9 +162,17 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
   // Use AI recommendations instead of mock data
   const recommendations = aiRecommendations;
 
-  const handleViewDetails = (crop: any) => {
-    setSelectedCrop(crop);
-  };
+  // These functions are already defined above
+  // Keeping the implementation here for reference
+  // const handleViewDetails = (crop: any) => {
+  //   setSelectedCrop(crop);
+  //   setShowDetailsModal(true);
+  // };
+  
+  // const handleCloseModal = () => {
+  //   setShowDetailsModal(false);
+  //   setSelectedCrop(null);
+  // };
 
   const handleChatSubmit = async () => {
     if (!chatInput.trim()) return;
@@ -201,136 +222,18 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
     }).format(amount);
   };
 
-  if (selectedCrop) {
-    return (
-      <div className="min-h-screen bg-gradient-earth">
-        {/* Header */}
-        <header className="p-4 border-b border-primary/10 bg-card">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Button variant="outline" onClick={() => setSelectedCrop(null)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Results
-            </Button>
-            <LanguageToggle />
-          </div>
-        </header>
-
-        {/* Crop Details */}
-        <section className="py-8 px-4">
-          <div className="max-w-4xl mx-auto">
-            <Card className="shadow-elevation">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="text-6xl">{selectedCrop.image}</div>
-                  <div>
-                    <CardTitle className="text-3xl text-primary mb-2">
-                      {selectedCrop.name_en} / {selectedCrop.name_hi}
-                    </CardTitle>
-                    <Badge className="bg-success text-success-foreground">
-                      ROI: +{selectedCrop.actualROI.toFixed(1)}%
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Investment Breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="bg-gradient-primary text-primary-foreground">
-                    <CardContent className="p-6 text-center">
-                      <div className="text-2xl font-bold mb-2">
-                        {formatCurrency(selectedCrop.totalInvestment)}
-                      </div>
-                      <div className="text-primary-foreground/80">{t('investmentRequired')}</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-gradient-secondary text-secondary-foreground">
-                    <CardContent className="p-6 text-center">
-                      <div className="text-2xl font-bold mb-2">
-                        {formatCurrency(selectedCrop.expectedReturn)}
-                      </div>
-                      <div className="text-secondary-foreground/80">{t('expectedReturns')}</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-success text-success-foreground">
-                    <CardContent className="p-6 text-center">
-                      <div className="text-2xl font-bold mb-2">
-                        {formatCurrency(selectedCrop.profitAmount)}
-                      </div>
-                      <div className="text-success-foreground/80">Net Profit</div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Fertilizer Schedule */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Fertilizer Schedule</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-muted/30 p-4 rounded-lg">
-                          <h4 className="font-semibold text-primary mb-2">Pre-Sowing</h4>
-                          <p className="text-sm text-muted-foreground mb-2">Apply 2 weeks before sowing</p>
-                          <ul className="text-sm space-y-1">
-                            <li>• DAP: 50 kg/acre (₹1,350)</li>
-                            <li>• Potash: 25 kg/acre (₹600)</li>
-                          </ul>
-                        </div>
-                        <div className="bg-muted/30 p-4 rounded-lg">
-                          <h4 className="font-semibold text-primary mb-2">Vegetative Stage</h4>
-                          <p className="text-sm text-muted-foreground mb-2">30-45 days after sowing</p>
-                          <ul className="text-sm space-y-1">
-                            <li>• Urea: 50 kg/acre (₹300)</li>
-                            <li>• Zinc Sulphate: 10 kg/acre (₹200)</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Pesticide Schedule */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pesticide & Disease Management</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="bg-warning/10 p-4 rounded-lg border border-warning/20">
-                        <h4 className="font-semibold text-warning-foreground mb-2">⚠️ Common Pests</h4>
-                        <ul className="text-sm space-y-2">
-                          <li><strong>Aphids:</strong> Spray Imidacloprid 200ml/acre when pest count exceeds threshold</li>
-                          <li><strong>Leaf Blight:</strong> Apply Copper Fungicide 2g/liter at first symptoms</li>
-                          <li><strong>Stem Borer:</strong> Use Chlorpyrifos 2ml/liter preventively</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Best Practices */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Best Practices</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm">
-                      <li>✅ Maintain proper spacing between plants for optimal growth</li>
-                      <li>✅ Regular monitoring for pest and disease symptoms</li>
-                      <li>✅ Ensure adequate irrigation without waterlogging</li>
-                      <li>✅ Use certified seeds from authorized dealers</li>
-                      <li>✅ Follow integrated pest management practices</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  // Use the CropDetailsModal component instead of a separate page
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  
+  const handleViewDetails = (crop: any) => {
+    setSelectedCrop(crop);
+    setShowDetailsModal(true);
+  };
+  
+  const handleCloseModal = () => {
+    setShowDetailsModal(false);
+    setSelectedCrop(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-earth">
@@ -429,6 +332,16 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
       >
         <MessageCircle className="h-6 w-6" />
       </Button>
+      
+      {/* Crop Details Modal */}
+      {showDetailsModal && selectedCrop && (
+        <CropDetailsModal
+          crop={selectedCrop}
+          onClose={handleCloseModal}
+          weatherData={weatherData}
+          soilData={soilData}
+        />
+      )}
 
       {/* AI Chatbot Popup */}
       {showChatbot && (
