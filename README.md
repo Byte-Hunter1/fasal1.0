@@ -1,63 +1,53 @@
-# Krishi Gyan Hub - Smart Crop Advisor for Indian Farmers
+# Welcome to your Lovable project
 
-## Project Overview
+## Project info
 
-Krishi Gyan Hub (FASAL) is a smart crop advisory application designed specifically for Indian farmers. The application provides personalized crop recommendations based on location, soil conditions, and weather data to help farmers make informed decisions about their crops.
+**URL**: https://lovable.dev/projects/4e629cdc-f38a-4ab2-abed-9a3e92961c21
 
-## Features
+## How can I edit this code?
 
-- **Personalized Crop Recommendations**: Get AI-powered crop suggestions based on your location and farm conditions
-- **Weather Forecasts**: Access local weather data relevant to farming decisions
-- **Soil Analysis**: View soil quality information for better crop planning
-- **Bilingual Support**: Available in English and Hindi
-- **Profit Optimization**: Recommendations include expected ROI and market prices
+There are several ways of editing your application.
 
-## Technology Stack
+**Use Lovable**
 
-- **Frontend**: React with TypeScript
-- **UI Framework**: Tailwind CSS with Shadcn UI components
-- **State Management**: React Context API
-- **Backend**: Supabase Functions
-- **Build Tool**: Vite
+Simply visit the [Lovable Project](https://lovable.dev/projects/4e629cdc-f38a-4ab2-abed-9a3e92961c21) and start prompting.
 
-## Getting Started
+Changes made via Lovable will be committed automatically to this repo.
 
-### Prerequisites
+**Use your preferred IDE**
 
-- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-### Installation
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
 
 ```sh
-# Clone the repository
-git clone <REPOSITORY_URL>
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-# Navigate to the project directory
-cd krishi-gyan-hub
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-# Install dependencies
-npm install
+# Step 3: Install the necessary dependencies.
+npm i
 
-# Start the development server
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
-## Project Structure
+**Edit a file directly in GitHub**
 
-- `/src/components`: UI components including weather and soil widgets
-- `/src/contexts`: Context providers including language context
-- `/src/pages`: Main application pages
-- `/src/data`: Mock data and utilities
-- `/src/integrations`: External service integrations (Supabase)
-- `/supabase/functions`: Serverless functions for data processing
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## Contributing
+**Use GitHub Codespaces**
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
 ## What technologies are used for this project?
