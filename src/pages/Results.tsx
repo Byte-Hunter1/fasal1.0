@@ -32,10 +32,16 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [locationData, setLocationData] = useState<any>(null);
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [soilData, setSoilData] = useState<any>(null);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
 
   // Fetch location data when component mounts
   React.useEffect(() => {
     fetchLocationData();
+    fetchWeatherData();
+    fetchSoilData();
   }, [formData.pincode]);
 
   const fetchLocationData = async () => {
@@ -54,13 +60,94 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
       console.error('Location fetch error:', err);
     }
   };
+
+  const fetchWeatherData = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-weather', {
+        body: { pincode: formData.pincode }
+      });
+
+      if (error) {
+        console.error('Weather fetch error:', error);
+        return;
+      }
+
+      setWeatherData(data);
+    } catch (err) {
+      console.error('Weather fetch error:', err);
+    }
+  };
+
+  const fetchSoilData = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-soil-data', {
+        body: { pincode: formData.pincode }
+      });
+
+      if (error) {
+        console.error('Soil fetch error:', error);
+        return;
+      }
+
+      setSoilData(data);
+    } catch (err) {
+      console.error('Soil fetch error:', err);
+    }
+  };
+
+  // Fetch AI recommendations when all data is available
+  React.useEffect(() => {
+    if (locationData && weatherData && soilData) {
+      fetchAIRecommendations();
+    }
+  }, [locationData, weatherData, soilData]);
+
+  const fetchAIRecommendations = async () => {
+    setRecommendationsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-crop-recommendations', {
+        body: {
+          pincode: formData.pincode,
+          farmArea: formData.farmArea,
+          areaUnit: formData.areaUnit,
+          previousCrops: formData.previousCrops,
+          weatherData,
+          soilData,
+          locationData
+        }
+      });
+
+      if (error) {
+        console.error('AI recommendations fetch error:', error);
+        // Fallback to mock data if AI fails
+        const fallbackRecommendations = calculateRecommendations(
+          formData.pincode,
+          formData.farmArea,
+          formData.previousCrops,
+          formData.areaUnit
+        );
+        setAiRecommendations(fallbackRecommendations);
+        return;
+      }
+
+      setAiRecommendations(data.recommendations || []);
+    } catch (err) {
+      console.error('AI recommendations fetch error:', err);
+      // Fallback to mock data if AI fails
+      const fallbackRecommendations = calculateRecommendations(
+        formData.pincode,
+        formData.farmArea,
+        formData.previousCrops,
+        formData.areaUnit
+      );
+      setAiRecommendations(fallbackRecommendations);
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  };
   
-  const recommendations = calculateRecommendations(
-    formData.pincode,
-    formData.farmArea,
-    formData.previousCrops,
-    formData.areaUnit
-  );
+  // Use AI recommendations instead of mock data
+  const recommendations = aiRecommendations;
 
   const handleViewDetails = (crop: any) => {
     setSelectedCrop(crop);
@@ -281,7 +368,19 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
                 <h2 className="text-2xl font-bold text-primary">{t('cropRecommendations')}</h2>
               </div>
               
-              {recommendations.length === 0 ? (
+              {recommendationsLoading ? (
+                <Card className="shadow-card">
+                  <CardContent className="p-8 text-center">
+                    <div className="text-4xl mb-4 animate-pulse">🤖</div>
+                    <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                      AI is analyzing your farm data...
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Getting personalized crop recommendations based on weather, soil, and market conditions
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : recommendations.length === 0 ? (
                 <Card className="shadow-card">
                   <CardContent className="p-8 text-center">
                     <div className="text-4xl mb-4">🌾</div>

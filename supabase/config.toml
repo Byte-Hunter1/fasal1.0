@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.get-soil-data]
 verify_jwt = false
+
+[functions.ai-crop-recommendations]
+verify_jwt = false
