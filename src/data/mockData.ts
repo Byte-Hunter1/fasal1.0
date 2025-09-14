@@ -246,16 +246,13 @@ export const calculateRecommendations = (
   const recommendations = suitableCrops.map(crop => {
     // Calculate total investment and expected return
     const totalInvestment = crop.investment_per_acre * areaInAcres;
-    
-    // Fix expected return calculation to ensure positive profit
-    // Use the ROI percentage from crop data to calculate expected return
-    const expectedReturn = totalInvestment * (1 + (crop.roi_percentage / 100));
+    const expectedReturn = crop.expected_yield_per_acre * areaInAcres * crop.current_price_per_kg;
     
     // Ensure profit calculation is correct
     const profitAmount = expectedReturn - totalInvestment;
     
     // Calculate actual ROI based on profit and investment
-    const actualROI = crop.roi_percentage; // Use the defined ROI from crop data
+    const actualROI = (profitAmount / totalInvestment) * 100;
     
     // Create investment breakdown
     const investmentBreakdown = {

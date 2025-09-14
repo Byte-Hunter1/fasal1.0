@@ -113,7 +113,7 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
         const cropParams = formDataToCropParams(formData, weatherData, soilData, locationData);
         
         // Get recommendations using the ML-based approach
-        const mlRecommendations = getCropRecommendations(cropParams, mockCrops);
+        const mlRecommendations = await getCropRecommendations(cropParams, mockCrops);
         
         if (mlRecommendations && mlRecommendations.length > 0) {
           console.log('Using ML-based crop recommendations');
@@ -246,7 +246,7 @@ const Results: React.FC<ResultsProps> = ({ formData, onBack }) => {
                       {selectedCrop.name_en} / {selectedCrop.name_hi}
                     </CardTitle>
                     <Badge className="bg-success text-success-foreground">
-                      ROI: +{(selectedCrop.actualROI || 0).toFixed(1)}%
+                      ROI: +{selectedCrop.actualROI.toFixed(1)}%
                     </Badge>
                   </div>
                 </div>
